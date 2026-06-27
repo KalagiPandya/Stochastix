@@ -337,6 +337,7 @@ Stochastix/
       ║              STOCHASTIX  —  HERO FOOTER                 ║
       ╚══════════════════════════════════════════════════════════╝  -->
 
-<img src="https://capsule-render.vercel.app/api?type=venom&color=0:7c3aed,30:4c1d95,60:2d1b69,85:1a0533,100:0d0221&height=160&section=footer&animation=twinkling" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:7c3aed,50:9333ea,100:c084fc&height=180&section=footer&text=Built%20with%20%E2%9D%A4%EF%B8%8F%20by%20Stochastix&fontSize=22&fontColor=ffffff&fontAlignY=65&animation=twinkling" width="100%"/>
 
 </div>
+
