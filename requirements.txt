@@ -1,0 +1,20 @@
+streamlit>=1.35.0
+pandas>=2.2.2
+numpy>=1.26.0
+plotly>=5.22.0
+requests>=2.32.0
+websocket-client>=1.8.0
+duckdb>=0.10.0
+python-dotenv>=1.0.0
+PyJWT>=2.8.0
+bcrypt>=4.1.0
+openpyxl>=3.1.0
+scikit-learn>=1.4.0
+# Optional heavy ML — comment out if slow install
+# prophet>=1.1.5
+# torch>=2.2.0
+# PostgreSQL backend — only needed if DB_BACKEND=postgres
+# psycopg2-binary>=2.9.9
+# Streaming backbone — only if STREAM_BACKEND=kafka or redis
+# kafka-python>=2.0.2
+# redis>=5.0.0

@@ -1,0 +1,91 @@
+version: "3.9"
+
+# ──────────────────────────────────────────────────────────────────────────
+# Stochastix PRO — Docker Compose
+#
+# Default (`docker compose up`):  app + DuckDB, no extra infra.
+#
+# Enable enterprise backends with profiles, e.g.:
+#   docker compose --profile postgres --profile redis up --build
+#   docker compose --profile postgres --profile kafka  up --build
+#
+# Then set in .env (see .env.example):
+#   DB_BACKEND=postgres
+#   STREAM_BACKEND=redis   (or kafka)
+# ──────────────────────────────────────────────────────────────────────────
+
+services:
+  stochastix:
+    build: .
+    container_name: stochastix-pro
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data        # persist DuckDB file (DB_BACKEND=duckdb)
+    environment:
+      - STOCHASTIX_DB=/app/data/stochastix.db
+      - DB_BACKEND=${DB_BACKEND:-duckdb}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-stochastix}
+      - POSTGRES_USER=${POSTGRES_USER:-stochastix}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-stochastix}
+      - STREAM_BACKEND=${STREAM_BACKEND:-none}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-only-insecure-secret-change-me}
+      - DEFAULT_ADMIN_USER=${DEFAULT_ADMIN_USER:-}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-}
+    restart: unless-stopped
+
+  # ── PostgreSQL + TimescaleDB ─────────────────────────────────────────
+  # Enable with: docker compose --profile postgres up
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: stochastix-timescaledb
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-stochastix}
+      POSTGRES_USER: ${POSTGRES_USER:-stochastix}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-stochastix}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/timescaledb:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stochastix}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis Streams ────────────────────────────────────────────────────
+  # Enable with: docker compose --profile redis up
+  redis:
+    image: redis:7-alpine
+    container_name: stochastix-redis
+    profiles: ["redis"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+
+  # ── Apache Kafka (KRaft mode — no Zookeeper needed) ─────────────────
+  # Enable with: docker compose --profile kafka up
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: stochastix-kafka
+    profiles: ["kafka"]
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      CLUSTER_ID: stochastix-kafka-cluster
+    volumes:
+      - ./data/kafka:/var/lib/kafka/data
